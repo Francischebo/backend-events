@@ -14,7 +14,7 @@ from flask_compress import Compress
 from extensions import mongo, jwt, socketio, bcrypt
 from routes import register_blueprints
 from websocket_handlers import register_socketio_handlers
-from config import DevelopmentConfig, ProductionConfig, TestingConfig
+from config import DevelopmentConfig, ProductionConfig
 
 load_dotenv()
 
