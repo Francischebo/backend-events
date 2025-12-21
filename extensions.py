@@ -1,7 +1,6 @@
 # extensions.py - Flask Extensions Initialization
 from flask_pymongo import PyMongo
 import os
-import certifi
 import pymongo
 from config import Config
 from flask_jwt_extended import JWTManager
@@ -41,8 +40,7 @@ class _MongoWrapper:
 					minPoolSize=app.config.get('MONGO_MIN_POOL_SIZE', 10),
 					maxIdleTimeMS=app.config.get('MONGO_MAX_IDLE_TIME_MS', 30000),
 					retryWrites=True,
-					retryReads=True,
-					tlsCAFile=certifi.where()
+					retryReads=True
 				)
 				# Test connection
 				client.server_info()
