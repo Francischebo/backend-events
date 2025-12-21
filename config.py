@@ -57,8 +57,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     FIREBASE_SERVICE_ACCOUNT_KEY = None  # Disable Firebase locally
-    MONGO_URI = os.environ.get('MONGO_URI') or 'mongodb://localhost:27017/event_management'
-
+    MONGO_URI = os.environ.get('MONGO_URI') 
 
 class ProductionConfig(Config):
     DEBUG = False
@@ -66,8 +65,3 @@ class ProductionConfig(Config):
     MONGO_URI = os.environ.get('MONGO_URI')
     if not MONGO_URI:
         raise ValueError("MONGO_URI environment variable is required for production")
-
-
-class TestingConfig(Config):
-    TESTING = True
-    MONGO_URI = os.environ.get('MONGO_URI') or 'mongodb://localhost:27017/event_management'
