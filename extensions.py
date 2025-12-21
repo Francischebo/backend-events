@@ -2,7 +2,6 @@
 from flask_pymongo import PyMongo
 import os
 import pymongo
-import ssl
 from config import Config
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
@@ -68,7 +67,7 @@ class _MongoWrapper:
 
 		# Fallback: build a pymongo client from config (only for non-Atlas)
 		try:
-			client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
+			client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=50000)
 			# Test connection
 			client.server_info()
 			self.client = client
