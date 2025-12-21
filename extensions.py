@@ -24,50 +24,20 @@ class _MongoWrapper:
 		# Initialize the underlying Flask-PyMongo
 		self._py.init_app(app)
 
-		# Always use custom client for Atlas connections to ensure proper TLS
-		uri = app.config.get('MONGO_URI') or os.environ.get('MONGO_URI') or Config.MONGO_URI
-		dbname = app.config.get('MONGO_DBNAME') or os.environ.get('MONGO_DBNAME') or getattr(Config, 'MONGO_DBNAME', 'event_management')
-		
-		if 'mongodb+srv' in uri or 'atlas' in uri.lower():
-			# For Atlas connections, use optimized connection settings
-			try:
-				client = pymongo.MongoClient(
-					uri, 
-					serverSelectionTimeoutMS=app.config.get('MONGO_SERVER_SELECTION_TIMEOUT_MS', 50000),
-					connectTimeoutMS=app.config.get('MONGO_CONNECT_TIMEOUT_MS', 50000),
-					socketTimeoutMS=app.config.get('MONGO_SOCKET_TIMEOUT_MS', 50000),
-					maxPoolSize=app.config.get('MONGO_MAX_POOL_SIZE', 50),
-					minPoolSize=app.config.get('MONGO_MIN_POOL_SIZE', 10),
-					maxIdleTimeMS=app.config.get('MONGO_MAX_IDLE_TIME_MS', 80000),
-					retryWrites=True,
-					retryReads=True,
-					tlsAllowInvalidCertificates=False
-				)
-				# Test connection
-				client.server_info()
-				self.client = client
-				self.db = client[dbname]
-				
-				# Create optimized indexes for performance
-				self._create_indexes()
-				
-				app.logger.info(f"Connected to MongoDB Atlas: {dbname}")
-				return
-			except Exception as e:
-				app.logger.error(f"Atlas connection failed: {e}")
-				self.client = None
-				self.db = None
-				return
-		
-		# For non-Atlas connections, try Flask-PyMongo first
+		# If Flask-PyMongo did not set a db (e.g., no default DB in URI), create a fallback
 		underlying_db = getattr(self._py, 'db', None)
 		if underlying_db is not None:
 			self.db = underlying_db
+			# try to attach client/cx if available
 			self.client = getattr(self._py, 'cx', None) or getattr(self._py, 'client', None)
 			return
 
-		# Fallback: build a pymongo client from config (only for non-Atlas)
+		# Fallback: build a pymongo client from config and attach a DB
+		uri = app.config.get('MONGO_URI') or os.environ.get('MONGO_URI') or Config.MONGO_URI
+		dbname = app.config.get('MONGO_DBNAME') or os.environ.get('MONGO_DBNAME') or getattr(Config, 'MONGO_DBNAME', 'event_management')
+		
 		try:
+			# Try to connect with the URI as-is
 			client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
 			# Test connection
 			client.server_info()
@@ -75,45 +45,26 @@ class _MongoWrapper:
 			self.db = client[dbname]
 			app.logger.info(f"Connected to MongoDB: {dbname}")
 		except Exception as e:
-			app.logger.error(f"MongoDB connection failed: {e}")
-			# Don't raise - let app start without DB for now
-			self.client = None
-			self.db = None
+			app.logger.warning(f"Failed to connect with URI: {e}")
+			
+			# Try local MongoDB as fallback
+			try:
+				local_uri = 'mongodb://localhost:27017/event_management'
+				app.logger.info(f"Attempting fallback to local MongoDB: {local_uri}")
+				client = pymongo.MongoClient(local_uri, serverSelectionTimeoutMS=5000)
+				client.server_info()
+				self.client = client
+				self.db = client[dbname]
+				app.logger.info(f"Connected to local MongoDB fallback: {dbname}")
+			except Exception as e2:
+				app.logger.error(f"Both Atlas and local MongoDB connections failed: {e2}")
+				# Don't raise - let app start without DB for now
+				self.client = None
+				self.db = None
 
 	def __getattr__(self, name):
 		# Proxy other attributes/methods to the underlying PyMongo instance
 		return getattr(self._py, name)
-
-	def _create_indexes(self):
-		"""Create optimized database indexes for performance"""
-		try:
-			# User collection indexes
-			self.db.users.create_index([("email", 1)], unique=True, background=True)
-			self.db.users.create_index([("username", 1)], unique=True, background=True)
-			self.db.users.create_index([("role", 1)], background=True)
-			self.db.users.create_index([("created_at", -1)], background=True)
-			
-			# Event collection indexes
-			self.db.events.create_index([("creator_id", 1)], background=True)
-			self.db.events.create_index([("start_date", 1)], background=True)
-			self.db.events.create_index([("end_date", 1)], background=True)
-			self.db.events.create_index([("location", "2dsphere")], background=True)
-			self.db.events.create_index([("status", 1)], background=True)
-			self.db.events.create_index([("created_at", -1)], background=True)
-			
-			# RSVP collection indexes
-			self.db.rsvps.create_index([("user_id", 1)], background=True)
-			self.db.rsvps.create_index([("event_id", 1)], background=True)
-			self.db.rsvps.create_index([("status", 1)], background=True)
-			self.db.rsvps.create_index([("created_at", -1)], background=True)
-			
-			# Compound indexes for common queries
-			self.db.rsvps.create_index([("event_id", 1), ("status", 1)], background=True)
-			self.db.rsvps.create_index([("user_id", 1), ("status", 1)], background=True)
-			
-			print("Database indexes created successfully")
-		except Exception as e:
-			print(f"Warning: Could not create some indexes: {e}")
 
 
 mongo = _MongoWrapper()
