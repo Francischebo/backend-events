@@ -38,7 +38,7 @@ class _MongoWrapper:
 		
 		try:
 			# Try to connect with the URI as-is
-			client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
+			client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=50000)
 			# Test connection
 			client.server_info()
 			self.client = client
@@ -51,7 +51,7 @@ class _MongoWrapper:
 			try:
 				local_uri = 'mongodb://localhost:27017/event_management'
 				app.logger.info(f"Attempting fallback to local MongoDB: {local_uri}")
-				client = pymongo.MongoClient(local_uri, serverSelectionTimeoutMS=5000)
+				client = pymongo.MongoClient(local_uri, serverSelectionTimeoutMS=50000)
 				client.server_info()
 				self.client = client
 				self.db = client[dbname]
