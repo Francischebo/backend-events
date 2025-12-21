@@ -2,7 +2,6 @@
 from flask_pymongo import PyMongo
 import os
 import pymongo
-import ssl
 from config import Config
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
