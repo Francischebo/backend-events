@@ -41,10 +41,7 @@ class _MongoWrapper:
 					minPoolSize=app.config.get('MONGO_MIN_POOL_SIZE', 10),
 					maxIdleTimeMS=app.config.get('MONGO_MAX_IDLE_TIME_MS', 30000),
 					retryWrites=True,
-					retryReads=True,
-					tls=True,
-					tlsAllowInvalidCertificates=False,
-					ssl_cert_reqs='CERT_REQUIRED'
+					retryReads=True
 				)
 				# Test connection
 				client.server_info()
