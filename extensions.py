@@ -2,6 +2,7 @@
 from flask_pymongo import PyMongo
 import os
 import pymongo
+import ssl
 from config import Config
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
@@ -33,13 +34,16 @@ class _MongoWrapper:
 			try:
 				client = pymongo.MongoClient(
 					uri, 
-					serverSelectionTimeoutMS=app.config.get('MONGO_SERVER_SELECTION_TIMEOUT_MS', 50000),
-					connectTimeoutMS=app.config.get('MONGO_CONNECT_TIMEOUT_MS', 50000),
-					socketTimeoutMS=app.config.get('MONGO_SOCKET_TIMEOUT_MS', 50000),
+					serverSelectionTimeoutMS=app.config.get('MONGO_SERVER_SELECTION_TIMEOUT_MS', 5000),
+					connectTimeoutMS=app.config.get('MONGO_CONNECT_TIMEOUT_MS', 5000),
+					socketTimeoutMS=app.config.get('MONGO_SOCKET_TIMEOUT_MS', 5000),
 					maxPoolSize=app.config.get('MONGO_MAX_POOL_SIZE', 50),
 					minPoolSize=app.config.get('MONGO_MIN_POOL_SIZE', 10),
 					maxIdleTimeMS=app.config.get('MONGO_MAX_IDLE_TIME_MS', 30000),
-					retryWrites=True
+					retryWrites=True,
+					retryReads=True,
+					tls=True,
+					tlsAllowInvalidCertificates=False
 				)
 				# Test connection
 				client.server_info()
@@ -66,7 +70,7 @@ class _MongoWrapper:
 
 		# Fallback: build a pymongo client from config (only for non-Atlas)
 		try:
-			client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=50000)
+			client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
 			# Test connection
 			client.server_info()
 			self.client = client
