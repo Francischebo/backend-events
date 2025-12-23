@@ -107,7 +107,7 @@ app = create_app()
 # ---------------- GUNICORN ENTRY ----------------
 if __name__ == "__main__":
     bind_host = os.environ.get("BIND_HOST", "0.0.0.0")
-    bind_port = int(os.environ.get("PORT", 8080))
+    bind_port = int(os.environ.get("PORT", 10000))
 
     socketio.run(
         app,
