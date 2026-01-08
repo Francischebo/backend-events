@@ -47,6 +47,9 @@ def create_app(config_name=None):
     }
     app.config.from_object(config_map.get(config_name, ProductionConfig))
 
+    app.json = CustomJSONProvider(app)
+
+
     # ---------------- PERFORMANCE OPTIMIZATIONS ----------------
     # Enable gzip compression
     compress = Compress()
