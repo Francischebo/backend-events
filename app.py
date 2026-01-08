@@ -10,6 +10,8 @@ from firebase_admin import credentials
 from dotenv import load_dotenv
 from bson import ObjectId
 from json import JSONEncoder
+from flask import jsonify
+from utils.serializer import serialize_user
 
 from flask_compress import Compress
 
@@ -113,6 +115,17 @@ def create_app(config_name=None):
             ensure_indexes()
 
     return app
+
+    @users_bp.route("/<user_id>", methods=["GET"])
+    def get_user(user_id):
+        user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+    
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+    
+        return jsonify(serialize_user(user)), 200
+
+
 
 
 app = create_app()
