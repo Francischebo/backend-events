@@ -8,6 +8,8 @@ from flask_socketio import SocketIO
 import firebase_admin
 from firebase_admin import credentials
 from dotenv import load_dotenv
+from bson import ObjectId
+from json import JSONEncoder
 
 from flask_compress import Compress
 
@@ -18,8 +20,19 @@ from config import DevelopmentConfig, ProductionConfig, TestingConfig
 
 load_dotenv()
 
+
+class MongoJSONEncoder(JSONEncoder):
+    """Custom JSON encoder that handles BSON ObjectId serialization."""
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
+
 def create_app(config_name=None):
     app = Flask(__name__)
+    
+    # Set custom JSON encoder for ObjectId serialization
+    app.json_encoder = MongoJSONEncoder
 
     # ---------------- CONFIG ----------------
     if config_name is None:
