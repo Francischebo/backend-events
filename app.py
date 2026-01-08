@@ -10,8 +10,6 @@ from firebase_admin import credentials
 from dotenv import load_dotenv
 from bson import ObjectId
 from json import JSONEncoder
-from flask import jsonify
-from utils.serializer import serialize_user
 
 from flask_compress import Compress
 
@@ -35,6 +33,19 @@ def create_app(config_name=None):
     
     # Set custom JSON encoder for ObjectId serialization
     app.json_encoder = MongoJSONEncoder
+    
+    # Also try to set for Flask 2.0+
+    if hasattr(app, 'json'):
+        try:
+            from flask.json.provider import DefaultJSONProvider
+            class MongoJSONProvider(DefaultJSONProvider):
+                def default(self, o):
+                    if isinstance(o, ObjectId):
+                        return str(o)
+                    return super().default(o)
+            app.json = MongoJSONProvider(app)
+        except (ImportError, AttributeError):
+            pass  # Flask < 2.0 or different structure
 
     # ---------------- CONFIG ----------------
     if config_name is None:
@@ -46,7 +57,6 @@ def create_app(config_name=None):
         "testing": TestingConfig
     }
     app.config.from_object(config_map.get(config_name, ProductionConfig))
-
 
     # ---------------- PERFORMANCE OPTIMIZATIONS ----------------
     # Enable gzip compression
@@ -116,15 +126,6 @@ def create_app(config_name=None):
             ensure_indexes()
 
     return app
-
-    @users_bp.route("/<user_id>", methods=["GET"])
-    def get_user(user_id):
-        user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
-    
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-    
-        return jsonify(serialize_user(user)), 200
 
 
 app = create_app()
