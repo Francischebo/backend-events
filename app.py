@@ -47,8 +47,6 @@ def create_app(config_name=None):
     }
     app.config.from_object(config_map.get(config_name, ProductionConfig))
 
-    app.json = CustomJSONProvider(app)
-
 
     # ---------------- PERFORMANCE OPTIMIZATIONS ----------------
     # Enable gzip compression
@@ -127,8 +125,6 @@ def create_app(config_name=None):
             return jsonify({"error": "User not found"}), 404
     
         return jsonify(serialize_user(user)), 200
-
-
 
 
 app = create_app()
